@@ -22,6 +22,9 @@ class BlockchainState():
         self.total_difficulty = total_difficulty
 
     def calculate_difficulty(self) -> int:
+        """
+        This method is used every time a block is appended to the chain in order to compute the difficulty of that block. The idea is to maintain a constant mining time of 2 minutes between blocks. 
+        """
         if len(self.longest_chain) <= DIFFICULTY_PERIOD:
             return 1000
         sleep(0.1)
@@ -36,7 +39,9 @@ class BlockchainState():
         return (total_difficulty_for_period // total_time_for_period) * 120
 
     def verify_and_apply_block(self, block: Block):
-
+        """
+        When a new block is mined, it can be addded to the blockchain. This method is the one that verifies that the new block is valid and, if it is, adds it to the blockchain. Then it recomputes the total difficulty of the chain and changes the user_states object. 
+        """
         if block.height != len(self.longest_chain):
             raise Exception('Height not equal to longest chain height!')
         if not self.longest_chain:
@@ -58,16 +63,21 @@ class BlockchainState():
         self.user_states.update(changed_states)
 
     def undo_last_block(self):
+        """
+        Undoes the block on the top of the chain. For these, there is a method that is called 'get_changes_for_undo()', that resets the balances and nonces of the user_states object. 
+        """
         last_block = self.longest_chain.pop()
-        print('Current difficulty:', self.total_difficulty)
-        print('difficulty to be deleted: ', last_block.difficulty)
         self.total_difficulty -= last_block.difficulty
-        print('Now it is: ', self.total_difficulty)
         self.user_states.update(
             last_block.get_changes_for_undo(self.user_states))
 
 
 def verify_reorg(old_state: BlockchainState, blocks: List[Block]) -> BlockchainState:
+    """
+    This method tests that a reorgnaization of the blockchain is valid. 
+    This can happen when a chaing subsitutes the current longest chain because now the valid chain (the chain with more work put into it) is not the current one. 
+    Then the current one has to be disassembled block by block, until reaching the lowest height of the new chain, and then the new chain must be assembled on top of the current one. 
+    """
     new_state = BlockchainState(deepcopy(
         old_state.longest_chain), deepcopy(old_state.user_states), old_state.total_difficulty)
 
@@ -85,6 +95,10 @@ def verify_reorg(old_state: BlockchainState, blocks: List[Block]) -> BlockchainS
 
 
 if __name__ == '__main__':
+    """
+    This piece of code here is to test the creation and mining of blocks without the need of a peer to peer network, just testing locally (prof. Vahid code)
+    """
+
     UserList = []
     UserStateList = []
     TRList = []
